@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { useSearch } from "wouter";
+import { useContent } from "../queries/content";
 import { Clock, Facebook, Instagram, Linkedin, Mail, MapPin, Phone, Youtube } from "lucide-react";
 import { waLink } from "../lib/site";
 import { telHref, useSite } from "../queries/site";
@@ -12,6 +14,8 @@ export default function ContactPage() {
     window.scrollTo(0, 0);
   }, []);
   const site = useSite();
+  const wa = useContent().whatsapp;
+  const preset = new URLSearchParams(useSearch()).get("service") ?? "";
   const items: { icon: typeof Phone; label: string; value: string; href?: string }[] = [
     { icon: Phone, label: "Call us", value: site.phone, href: telHref(site.phone) },
     { icon: Mail, label: "Email", value: site.email, href: `mailto:${site.email}` },
@@ -59,6 +63,11 @@ export default function ContactPage() {
           <a href={waLink(site.whatsapp, site.bot.whatsappMessage)} target="_blank" rel="noreferrer" className="mt-6 inline-flex items-center gap-2 rounded-full bg-wa px-7 py-3 font-semibold text-white shadow-[0_12px_24px_-12px_rgba(37,211,102,0.9)] hover:brightness-95">
             <WaIcon /> Chat on WhatsApp
           </a>
+          {wa.secondNumber && (
+            <a href={waLink(wa.secondNumber, site.bot.whatsappMessage)} target="_blank" rel="noreferrer" className="ml-3 mt-6 inline-flex items-center gap-2 rounded-full border-2 border-wa px-7 py-2.5 font-semibold text-green-700 hover:brightness-95 hover:bg-wa hover:text-white">
+              <WaIcon /> WhatsApp {wa.secondLabel || "us"}
+            </a>
+          )}
           {socials.length > 0 && (
             <div className="mt-6 flex gap-2">
               {socials.map(([k, Icon]) => (
@@ -81,7 +90,7 @@ export default function ContactPage() {
             </div>
           </div>
           <div className="mt-6">
-            <LeadForm layout="stack" source="contact" cta="Get Free Consultation" withEmail withMessage />
+            <LeadForm layout="stack" source="contact" cta="Get Free Consultation" withEmail withMessage defaultService={preset} />
           </div>
         </div>
       </div>

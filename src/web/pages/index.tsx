@@ -31,6 +31,8 @@ import { asset } from "../lib/demo";
 import { useSite } from "../queries/site";
 import { LeadForm } from "../components/lead-form";
 import { WaIcon } from "../components/header";
+import { useContent } from "../queries/content";
+import { PostCard } from "../components/content-ui";
 import { Burst, CheckCard, Cutout, GoogleG, Hand, SectionHead, Sparkle, Squiggle, TINTS } from "../components/pastel";
 
 export const CAT_ICONS: Record<string, LucideIcon> = {
@@ -50,7 +52,7 @@ type HeroSlide = { tab: string; tag: string; title: string; text: string; cta: s
 const slideFor = (link: string) => SLIDES.find((s) => s.link === link)!;
 const fromSlide = (link: string, image: string, checks: string[], note: string, tab?: string): HeroSlide => {
   const s = slideFor(link);
-  return { tab: tab ?? s.tag, tag: s.tag, title: s.title, text: s.text, cta: s.cta || s.linkText, link: s.cta ? "#enquiry" : s.link, image: asset(image), checks, note };
+  return { tab: tab ?? s.tag, tag: s.tag, title: s.title, text: s.text, cta: s.cta || s.linkText, link: s.cta ? "#enquiry" : s.link, image, checks, note };
 };
 
 const HERO: HeroSlide[] = [
@@ -61,7 +63,7 @@ const HERO: HeroSlide[] = [
     text: "Registration, logo & branding, websites, social media, AI tools and Microsoft certifications — all in one place, handled by experts, 100% online.",
     cta: "Get Free Consultation",
     link: "#enquiry",
-    image: asset("/images/hero-all.webp"),
+    image: "/images/hero-all.webp",
     checks: ["Registration to marketing", "Expert guidance at every step", "Reply within 30 minutes"],
     note: "Start · Build · Grow · Together",
   },
@@ -175,7 +177,7 @@ function Hero() {
           {HERO.map((h, k) => (
             <Cutout
               key={h.image}
-              src={h.image}
+              src={asset(h.image)}
               eager={k === 0}
               className={`absolute bottom-0 left-1/2 h-[96%] w-auto max-w-none -translate-x-1/2 transition-opacity duration-1000 ${k === i ? "opacity-100" : "opacity-0"}`}
             />
@@ -482,14 +484,14 @@ const WHY = [
   { icon: Headphones, title: "Real experts", text: "CA, CS and design experts guide you at every step.", tone: "bg-lav text-[#7a5af5]" },
 ];
 
-const REVIEWS = [
-  { name: "Ravi K.", city: "Hyderabad", text: "My GST and company registration were done in a week. Very smooth, and they explained everything simply.", tone: "bg-royal" },
-  { name: "Priya S.", city: "Bengaluru", text: "They designed our logo and website together. Looks very professional and customers notice it.", tone: "bg-brand" },
-  { name: "Arjun M.", city: "Pune", text: "Our Instagram enquiries doubled in 2 months. The team posts on time every week.", tone: "bg-[#16a34a]" },
-];
+
+const REVIEW_TONES = ["bg-royal", "bg-brand", "bg-[#16a34a]"];
 
 function TrustReviews() {
   const site = useSite();
+  const content = useContent();
+  const rs = content.reviewsSection;
+  const REVIEWS = rs.show ? content.reviews.slice(0, 3) : [];
   return (
     <section className="pastel-grad py-16 sm:py-20">
       <div className="container-x grid gap-12 lg:grid-cols-[0.95fr_1.25fr] lg:items-start [&>*]:min-w-0">
@@ -519,30 +521,58 @@ function TrustReviews() {
           </div>
         </div>
 
+        {REVIEWS.length > 0 && (
         <div className="rounded-[28px] bg-white p-6 shadow-[0_30px_60px_-36px_rgba(20,33,78,0.45)] ring-1 ring-line sm:p-8">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-[21px] font-bold">What Our Clients Say</h3>
-            <span className="flex items-center gap-2 text-[14px] font-semibold text-navy">
-              <GoogleG className="h-5 w-5" /> 4.8
-              <span className="flex text-[#FFB020]">{[0, 1, 2, 3, 4].map((k) => <Star key={k} className="h-4 w-4 fill-current" />)}</span>
-              <span className="font-normal text-body">on Google</span>
-            </span>
+            {rs.rating && (
+              <a href={rs.googleUrl || undefined} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[14px] font-semibold text-navy">
+                <GoogleG className="h-5 w-5" /> {rs.rating}
+                <span className="flex text-[#FFB020]">{[0, 1, 2, 3, 4].map((k) => <Star key={k} className="h-4 w-4 fill-current" />)}</span>
+                <span className="font-normal text-body">on Google{rs.ratingCount ? ` (${rs.ratingCount})` : ""}</span>
+              </a>
+            )}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {REVIEWS.map((r, k) => (
-              <figure key={r.name} className={`rounded-2xl bg-surface p-5 ring-1 ring-line ${k === 2 ? "sm:col-span-2" : ""}`}>
-                <div className="flex text-[#FFB020]">{[0, 1, 2, 3, 4].map((x) => <Star key={x} className="h-4 w-4 fill-current" />)}</div>
+              <figure key={r.id} className={`rounded-2xl bg-surface p-5 ring-1 ring-line ${k === 2 ? "sm:col-span-2" : ""}`}>
+                <div className="flex text-[#FFB020]">{Array.from({ length: r.rating }, (_, x) => <Star key={x} className="h-4 w-4 fill-current" />)}</div>
                 <blockquote className="mt-3 text-[14.5px] leading-relaxed text-navy">"{r.text}"</blockquote>
                 <figcaption className="mt-4 flex items-center gap-3">
-                  <span className={`grid h-10 w-10 place-items-center rounded-full text-[15px] font-bold text-white ${r.tone}`}>{r.name[0]}</span>
+                  <span className={`grid h-10 w-10 place-items-center rounded-full text-[15px] font-bold text-white ${REVIEW_TONES[k % 3]}`}>{r.name[0]}</span>
                   <span>
                     <span className="block text-[14.5px] font-semibold text-navy">{r.name}</span>
-                    <span className="text-[12.5px]">{r.city}</span>
+                    <span className="text-[12.5px]">{r.place}</span>
                   </span>
                 </figcaption>
               </figure>
             ))}
           </div>
+        </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ───────────────────────── Latest blog posts ───────────────────────── */
+
+function LatestPosts() {
+  const content = useContent();
+  if (!content.blog.show || !content.posts.length) return null;
+  return (
+    <section className="py-16 sm:py-20">
+      <div className="container-x">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <SectionHead eyebrow={content.blog.title || "Blog"} title="Tips &" accent="Guides" align="left" className="!mb-8" />
+          <Link to="/blog" className="mb-8 inline-flex items-center gap-1.5 font-semibold text-royal hover:gap-2.5">
+            See all articles <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {content.posts.slice(0, 3).map((p) => (
+            <PostCard key={p.id} p={p} />
+          ))}
         </div>
       </div>
     </section>
@@ -551,16 +581,11 @@ function TrustReviews() {
 
 /* ───────────────────────── 9. FAQ with helper person ───────────────────────── */
 
-const FAQS = [
-  { q: "Do I need to visit your office?", a: "No. Everything is done online. You can share documents on WhatsApp or email." },
-  { q: "How long does GST registration take?", a: "Usually 3 to 7 working days, once we have all your documents." },
-  { q: "Can you do registration and the website together?", a: "Yes. Many clients start with registration and logo, then add a website. We offer combo prices." },
-  { q: "How do I pay?", a: "You can pay by UPI, debit/credit card or bank transfer. You get a proper GST invoice." },
-  { q: "I'm not sure which registration I need. Can you help?", a: "Yes — that's what the free consultation is for. Our expert will suggest the right option for you." },
-];
 
 function FaqHelp() {
   const [open, setOpen] = useState<number | null>(0);
+  const FAQS = useContent().faqs;
+  if (!FAQS.length) return null;
   return (
     <section className="py-16 sm:py-20">
       <div className="container-x grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center [&>*]:min-w-0">
@@ -579,7 +604,7 @@ function FaqHelp() {
             {FAQS.map((f, k) => {
               const isOpen = open === k;
               return (
-                <div key={f.q} className={`rounded-2xl bg-white ring-1 transition ${isOpen ? "ring-royal/30 shadow-[0_18px_36px_-24px_rgba(20,85,237,0.45)]" : "ring-line"}`}>
+                <div key={f.id} className={`rounded-2xl bg-white ring-1 transition ${isOpen ? "ring-royal/30 shadow-[0_18px_36px_-24px_rgba(20,85,237,0.45)]" : "ring-line"}`}>
                   <button onClick={() => setOpen(isOpen ? null : k)} aria-expanded={isOpen} className="flex w-full items-center gap-3 px-5 py-4 text-left font-semibold text-navy">
                     <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${isOpen ? "bg-royal text-white" : "bg-sky text-royal"}`}>
                       {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
@@ -648,6 +673,7 @@ export default function Index() {
       <ServiceMenu />
       <Process />
       <TrustReviews />
+      <LatestPosts />
       <FaqHelp />
       <CtaBand />
     </>
